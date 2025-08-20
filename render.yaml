@@ -3,10 +3,8 @@ services:
     name: line-mention-bot
     env: python
     plan: free
-    buildCommand: |
-      apt-get update && apt-get install -y gcc python3-dev
-      pip install -r requirements.txt
-    startCommand: gunicorn wsgi:app
+    buildCommand: pip install -r requirements.txt
+    startCommand: python start_app.py
     envVars:
       - key: FLASK_ENV
         value: production

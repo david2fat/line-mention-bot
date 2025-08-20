@@ -249,4 +249,7 @@ if __name__ == "__main__":
     # 雲端部署設定
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV') == 'development'
-    app.run(debug=debug, host='0.0.0.0', port=port) 
+    app.run(debug=debug, host='0.0.0.0', port=port)
+
+# 確保應用程式可以正確啟動
+app.config['SERVER_NAME'] = None 
