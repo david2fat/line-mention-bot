@@ -221,7 +221,7 @@ def get_statistics():
     cursor.execute('SELECT COUNT(*) FROM mentioned_users')
     total_mentions = cursor.fetchone()[0]
     
-    # 被提及的使用者數量
+    # 被提及的使用者數量（按 user_id 分組）
     cursor.execute('SELECT COUNT(DISTINCT user_id) FROM mentioned_users')
     unique_users = cursor.fetchone()[0]
     
@@ -229,15 +229,34 @@ def get_statistics():
     cursor.execute('SELECT COUNT(DISTINCT group_id) FROM mentioned_users')
     group_count = cursor.fetchone()[0]
     
-    # 最常被提及的使用者
+    # 最常被提及的使用者（合併相同用戶的不同名稱）
     cursor.execute('''
-        SELECT user_name, COUNT(*) as mention_count
+        SELECT 
+            user_id,
+            GROUP_CONCAT(DISTINCT user_name ORDER BY mentioned_at DESC) as all_names,
+            COUNT(*) as mention_count
         FROM mentioned_users
-        GROUP BY user_id, user_name
+        GROUP BY user_id
         ORDER BY mention_count DESC
         LIMIT 10
     ''')
-    top_users = [{'user_name': row[0], 'count': row[1]} for row in cursor.fetchall()]
+    
+    top_users = []
+    for row in cursor.fetchall():
+        user_id, all_names, count = row
+        # 取最新的名稱作為顯示名稱
+        latest_name = all_names.split(',')[0] if all_names else '未知用戶'
+        # 如果有多個名稱，在括號中顯示
+        if ',' in all_names:
+            display_name = f"{latest_name} ({len(all_names.split(','))}個名稱)"
+        else:
+            display_name = latest_name
+            
+        top_users.append({
+            'user_name': display_name,
+            'count': count,
+            'user_id': user_id
+        })
     
     # 今日提及次數
     cursor.execute('''
