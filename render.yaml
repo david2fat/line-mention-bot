@@ -1,22 +1,14 @@
-{
-  "services": [
-    {
-      "type": "web",
-      "name": "line-mention-bot",
-      "env": "python",
-      "plan": "free",
-      "buildCommand": "pip install -r requirements.txt",
-      "startCommand": "gunicorn wsgi:app",
-      "envVars": [
-        {
-          "key": "FLASK_ENV",
-          "value": "production"
-        },
-        {
-          "key": "FLASK_DEBUG",
-          "value": "False"
-        }
-      ]
-    }
-  ]
-}
+services:
+  - type: web
+    name: line-mention-bot
+    env: python
+    plan: free
+    buildCommand: |
+      apt-get update && apt-get install -y gcc python3-dev
+      pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: False
