@@ -234,20 +234,40 @@ def get_statistics():
         cursor.execute('SELECT COUNT(DISTINCT group_id) FROM mentioned_users')
         group_count = cursor.fetchone()[0]
         
-        # 最常被提及的使用者（簡化版本，避免 GROUP_CONCAT 問題）
+        # 最常被提及的使用者（按 user_id 分組，合併相同用戶）
         cursor.execute('''
-            SELECT user_name, COUNT(*) as mention_count
+            SELECT user_id, COUNT(*) as mention_count
             FROM mentioned_users
-            GROUP BY user_id, user_name
+            GROUP BY user_id
             ORDER BY mention_count DESC
             LIMIT 10
         ''')
         
         top_users = []
         for row in cursor.fetchall():
-            user_name, count = row
+            user_id, count = row
+            
+            # 獲取該用戶的所有名稱
+            cursor.execute('''
+                SELECT DISTINCT user_name 
+                FROM mentioned_users 
+                WHERE user_id = ? 
+                ORDER BY mentioned_at DESC
+            ''', (user_id,))
+            
+            user_names = [name[0] for name in cursor.fetchall()]
+            
+            # 使用最新的名稱作為顯示名稱
+            latest_name = user_names[0] if user_names else '未知用戶'
+            
+            # 如果有多個名稱，在括號中顯示
+            if len(user_names) > 1:
+                display_name = f"{latest_name} ({len(user_names)}個名稱)"
+            else:
+                display_name = latest_name
+                
             top_users.append({
-                'user_name': user_name,
+                'user_name': display_name,
                 'count': count
             })
         
