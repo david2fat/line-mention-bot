@@ -176,104 +176,107 @@ def reply_message(reply_token, mentioned_users):
 @app.route("/api/mentioned-users")
 def get_mentioned_users():
     """API 端點：獲取所有被提及的使用者資料"""
-    conn = sqlite3.connect('line_data.db')
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        SELECT user_id, user_name, group_id, message, mentioned_at, message_id
-        FROM mentioned_users
-        ORDER BY mentioned_at DESC
-        LIMIT 50
-    ''')
-    
-    users = []
-    for row in cursor.fetchall():
-        # 格式化群組 ID 為更易讀的名稱
-        group_id = row[2]
-        if group_id:
-            # 如果群組 ID 很長，取前8位並加上省略號
-            if len(group_id) > 12:
-                group_display = f"群組 {group_id[:8]}..."
+    try:
+        conn = sqlite3.connect('line_data.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT user_id, user_name, group_id, message, mentioned_at, message_id
+            FROM mentioned_users
+            ORDER BY mentioned_at DESC
+            LIMIT 50
+        ''')
+        
+        users = []
+        for row in cursor.fetchall():
+            # 格式化群組 ID 為更易讀的名稱
+            group_id = row[2]
+            if group_id:
+                # 如果群組 ID 很長，取前8位並加上省略號
+                if len(group_id) > 12:
+                    group_display = f"群組 {group_id[:8]}..."
+                else:
+                    group_display = f"群組 {group_id}"
             else:
-                group_display = f"群組 {group_id}"
-        else:
-            group_display = "未知群組"
-            
-        users.append({
-            'user_id': row[0],
-            'user_name': row[1],
-            'group_id': group_display,
-            'message': row[3],
-            'mentioned_at': row[4],
-            'message_id': row[5]
-        })
-    
-    conn.close()
-    return jsonify(users)
+                group_display = "未知群組"
+                
+            users.append({
+                'user_id': row[0],
+                'user_name': row[1],
+                'group_id': group_display,
+                'message': row[3],
+                'mentioned_at': row[4],
+                'message_id': row[5]
+            })
+        
+        conn.close()
+        return jsonify(users)
+    except Exception as e:
+        print(f"提及記錄 API 錯誤: {e}")
+        return jsonify([]), 500
 
 @app.route("/api/statistics")
 def get_statistics():
     """API 端點：獲取統計資料"""
-    conn = sqlite3.connect('line_data.db')
-    cursor = conn.cursor()
-    
-    # 總提及次數
-    cursor.execute('SELECT COUNT(*) FROM mentioned_users')
-    total_mentions = cursor.fetchone()[0]
-    
-    # 被提及的使用者數量（按 user_id 分組）
-    cursor.execute('SELECT COUNT(DISTINCT user_id) FROM mentioned_users')
-    unique_users = cursor.fetchone()[0]
-    
-    # 群組數量
-    cursor.execute('SELECT COUNT(DISTINCT group_id) FROM mentioned_users')
-    group_count = cursor.fetchone()[0]
-    
-    # 最常被提及的使用者（合併相同用戶的不同名稱）
-    cursor.execute('''
-        SELECT 
-            user_id,
-            GROUP_CONCAT(DISTINCT user_name ORDER BY mentioned_at DESC) as all_names,
-            COUNT(*) as mention_count
-        FROM mentioned_users
-        GROUP BY user_id
-        ORDER BY mention_count DESC
-        LIMIT 10
-    ''')
-    
-    top_users = []
-    for row in cursor.fetchall():
-        user_id, all_names, count = row
-        # 取最新的名稱作為顯示名稱
-        latest_name = all_names.split(',')[0] if all_names else '未知用戶'
-        # 如果有多個名稱，在括號中顯示
-        if ',' in all_names:
-            display_name = f"{latest_name} ({len(all_names.split(','))}個名稱)"
-        else:
-            display_name = latest_name
-            
-        top_users.append({
-            'user_name': display_name,
-            'count': count,
-            'user_id': user_id
+    try:
+        conn = sqlite3.connect('line_data.db')
+        cursor = conn.cursor()
+        
+        # 總提及次數
+        cursor.execute('SELECT COUNT(*) FROM mentioned_users')
+        total_mentions = cursor.fetchone()[0]
+        
+        # 被提及的使用者數量（按 user_id 分組）
+        cursor.execute('SELECT COUNT(DISTINCT user_id) FROM mentioned_users')
+        unique_users = cursor.fetchone()[0]
+        
+        # 群組數量
+        cursor.execute('SELECT COUNT(DISTINCT group_id) FROM mentioned_users')
+        group_count = cursor.fetchone()[0]
+        
+        # 最常被提及的使用者（簡化版本，避免 GROUP_CONCAT 問題）
+        cursor.execute('''
+            SELECT user_name, COUNT(*) as mention_count
+            FROM mentioned_users
+            GROUP BY user_id, user_name
+            ORDER BY mention_count DESC
+            LIMIT 10
+        ''')
+        
+        top_users = []
+        for row in cursor.fetchall():
+            user_name, count = row
+            top_users.append({
+                'user_name': user_name,
+                'count': count
+            })
+        
+        # 今日提及次數
+        cursor.execute('''
+            SELECT COUNT(*) FROM mentioned_users 
+            WHERE DATE(mentioned_at) = DATE('now')
+        ''')
+        today_mentions = cursor.fetchone()[0]
+        
+        conn.close()
+        
+        return jsonify({
+            'total_mentions': total_mentions,
+            'unique_users': unique_users,
+            'group_count': group_count,
+            'top_users': top_users,
+            'today_mentions': today_mentions
         })
-    
-    # 今日提及次數
-    cursor.execute('''
-        SELECT COUNT(*) FROM mentioned_users 
-        WHERE DATE(mentioned_at) = DATE('now')
-    ''')
-    today_mentions = cursor.fetchone()[0]
-    
-    conn.close()
-    
-    return jsonify({
-        'total_mentions': total_mentions,
-        'unique_users': unique_users,
-        'group_count': group_count,
-        'top_users': top_users,
-        'today_mentions': today_mentions
-    })
+    except Exception as e:
+        print(f"統計 API 錯誤: {e}")
+        return jsonify({
+            'total_mentions': 0,
+            'unique_users': 0,
+            'group_count': 0,
+            'top_users': [],
+            'today_mentions': 0,
+            'error': str(e)
+        }), 500
 
 if __name__ == "__main__":
     # 雲端部署設定
