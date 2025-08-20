@@ -188,10 +188,21 @@ def get_mentioned_users():
     
     users = []
     for row in cursor.fetchall():
+        # 格式化群組 ID 為更易讀的名稱
+        group_id = row[2]
+        if group_id:
+            # 如果群組 ID 很長，取前8位並加上省略號
+            if len(group_id) > 12:
+                group_display = f"群組 {group_id[:8]}..."
+            else:
+                group_display = f"群組 {group_id}"
+        else:
+            group_display = "未知群組"
+            
         users.append({
             'user_id': row[0],
             'user_name': row[1],
-            'group_id': row[2],
+            'group_id': group_display,
             'message': row[3],
             'mentioned_at': row[4],
             'message_id': row[5]

@@ -8,14 +8,14 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f8f9fa;
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         .main-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             margin: 20px auto;
             padding: 30px;
         }
@@ -25,12 +25,12 @@
             color: #333;
         }
         .stats-card {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            background: #007bff;
             color: white;
-            border-radius: 15px;
+            border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         .stats-card h3 {
             margin: 0;
@@ -43,16 +43,16 @@
         }
         .user-card {
             background: white;
-            border-radius: 10px;
+            border-radius: 8px;
             padding: 15px;
             margin-bottom: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border-left: 4px solid #007bff;
             transition: transform 0.2s;
         }
         .user-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         .user-name {
             font-weight: bold;
@@ -64,23 +64,32 @@
             font-style: italic;
             margin-top: 5px;
         }
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 0.85rem;
+        }
+        .group-name {
+            color: #007bff;
+            font-weight: 500;
+        }
         .user-time {
             color: #999;
-            font-size: 0.9rem;
-            margin-top: 5px;
         }
         .refresh-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: #007bff;
             border: none;
-            border-radius: 25px;
-            padding: 10px 25px;
+            border-radius: 6px;
+            padding: 10px 20px;
             color: white;
-            font-weight: bold;
-            transition: all 0.3s;
+            font-weight: 500;
+            transition: all 0.2s;
         }
         .refresh-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            background: #0056b3;
+            transform: translateY(-1px);
         }
         .loading {
             text-align: center;
@@ -217,8 +226,13 @@
                             <i class="fas fa-at"></i> ${mention.user_name}
                         </div>
                         <div class="user-message">${mention.message}</div>
-                        <div class="user-time">
-                            <i class="fas fa-clock"></i> ${new Date(mention.mentioned_at).toLocaleString('zh-TW')}
+                        <div class="user-info">
+                            <span class="group-name">
+                                <i class="fas fa-users"></i> ${mention.group_id || '未知群組'}
+                            </span>
+                            <span class="user-time">
+                                <i class="fas fa-clock"></i> ${new Date(mention.mentioned_at).toLocaleString('zh-TW')}
+                            </span>
                         </div>
                     </div>
                 `).join('');
