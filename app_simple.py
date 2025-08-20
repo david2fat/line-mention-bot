@@ -107,9 +107,10 @@ def parse_mentions(text, group_id):
         for match in matches:
             # 避免重複記錄
             if not any(user['user_name'] == match for user in mentioned_users):
+                # 使用更簡單的 user_id 格式
                 mentioned_users.append({
                     'user_name': match,
-                    'user_id': f"user_{match}_{group_id}",
+                    'user_id': match,  # 直接使用名稱作為 ID
                     'group_id': group_id
                 })
     
@@ -140,6 +141,25 @@ def save_mentions(mentioned_users, group_id, message, message_id):
         
     except Exception as e:
         print(f"儲存提及記錄時發生錯誤: {e}")
+
+def is_similar_name(name1, name2):
+    """檢查兩個名稱是否相似（可能是同一個人）"""
+    # 如果名稱完全相同，直接返回 True
+    if name1 == name2:
+        return True
+    
+    # 如果一個名稱包含另一個名稱，認為是相似的
+    if name1 in name2 or name2 in name1:
+        return True
+    
+    # 檢查是否有共同的前綴（至少3個字符）
+    min_length = min(len(name1), len(name2))
+    if min_length >= 3:
+        for i in range(3, min_length + 1):
+            if name1[:i] == name2[:i]:
+                return True
+    
+    return False
 
 def reply_message(reply_token, mentioned_users):
     """回覆 LINE 訊息"""
@@ -234,42 +254,54 @@ def get_statistics():
         cursor.execute('SELECT COUNT(DISTINCT group_id) FROM mentioned_users')
         group_count = cursor.fetchone()[0]
         
-        # 最常被提及的使用者（按 user_id 分組，合併相同用戶）
+        # 最常被提及的使用者（智能合併相似名稱）
         cursor.execute('''
-            SELECT user_id, COUNT(*) as mention_count
+            SELECT user_name, COUNT(*) as mention_count
             FROM mentioned_users
-            GROUP BY user_id
+            GROUP BY user_name
             ORDER BY mention_count DESC
-            LIMIT 10
+            LIMIT 20
         ''')
         
-        top_users = []
+        # 智能合併相似名稱
+        user_groups = {}
         for row in cursor.fetchall():
-            user_id, count = row
+            user_name, count = row
             
-            # 獲取該用戶的所有名稱
-            cursor.execute('''
-                SELECT DISTINCT user_name 
-                FROM mentioned_users 
-                WHERE user_id = ? 
-                ORDER BY mentioned_at DESC
-            ''', (user_id,))
+            # 檢查是否與現有用戶組相似
+            matched = False
+            for group_key in user_groups:
+                if is_similar_name(user_name, group_key):
+                    user_groups[group_key]['count'] += count
+                    user_groups[group_key]['names'].append(user_name)
+                    matched = True
+                    break
             
-            user_names = [name[0] for name in cursor.fetchall()]
-            
-            # 使用最新的名稱作為顯示名稱
-            latest_name = user_names[0] if user_names else '未知用戶'
-            
-            # 如果有多個名稱，在括號中顯示
-            if len(user_names) > 1:
-                display_name = f"{latest_name} ({len(user_names)}個名稱)"
+            if not matched:
+                user_groups[user_name] = {
+                    'count': count,
+                    'names': [user_name]
+                }
+        
+        # 轉換為列表格式
+        top_users = []
+        for group_key, group_data in user_groups.items():
+            names = group_data['names']
+            if len(names) > 1:
+                # 使用最長的名稱作為顯示名稱
+                display_name = max(names, key=len)
+                display_name = f"{display_name} ({len(names)}個名稱)"
             else:
-                display_name = latest_name
+                display_name = names[0]
                 
             top_users.append({
                 'user_name': display_name,
-                'count': count
+                'count': group_data['count']
             })
+        
+        # 按提及次數排序並取前10名
+        top_users.sort(key=lambda x: x['count'], reverse=True)
+        top_users = top_users[:10]
         
         # 今日提及次數
         cursor.execute('''
