@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>測試頁面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .api-result {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 LINE @ 提醒系統測試頁面</h1>
+        
+        <div class="status success">
+            ✅ 系統已成功啟動！
+        </div>
+        
+        <h2>📊 系統狀態</h2>
+        <div id="systemStatus">
+            <p><strong>當前時間:</strong> <span id="currentTime"></span></p>
+            <p><strong>系統版本:</strong> Python Flask</p>
+            <p><strong>資料庫狀態:</strong> <span id="dbStatus">檢查中...</span></p>
+        </div>
+        
+        <h2>🔧 API 測試</h2>
+        <button onclick="testStatistics()">測試統計 API</button>
+        <button onclick="testMentions()">測試提及記錄 API</button>
+        <button onclick="testDatabase()">測試資料庫連接</button>
+        
+        <div id="apiResults"></div>
+        
+        <h2>📱 系統連結</h2>
+        <p><a href="/" target="_blank">🏠 前往主頁面</a></p>
+        <p><a href="/api/statistics" target="_blank">📈 統計資料 API</a></p>
+        <p><a href="/api/mentioned-users" target="_blank">👥 提及記錄 API</a></p>
+        
+        <h2>🔗 Webhook 資訊</h2>
+        <p><strong>Webhook URL:</strong> <code id="webhookUrl"></code></p>
+        <p><strong>狀態:</strong> <span class="status success">運行中</span></p>
+    </div>
+
+    <script>
+        // 設定 Webhook URL
+        document.getElementById('webhookUrl').textContent = window.location.origin + '/webhook';
+        
+        // 更新當前時間
+        function updateTime() {
+            document.getElementById('currentTime').textContent = new Date().toLocaleString('zh-TW');
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // 測試統計 API
+        async function testStatistics() {
+            try {
+                const response = await fetch('/api/statistics');
+                const data = await response.json();
+                document.getElementById('apiResults').innerHTML = `
+                    <div class="api-result">
+                        <h3>📊 統計資料 API 測試結果:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('apiResults').innerHTML = `
+                    <div class="api-result error">
+                        <h3>❌ 統計資料 API 測試失敗:</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        // 測試提及記錄 API
+        async function testMentions() {
+            try {
+                const response = await fetch('/api/mentioned-users');
+                const data = await response.json();
+                document.getElementById('apiResults').innerHTML = `
+                    <div class="api-result">
+                        <h3>👥 提及記錄 API 測試結果:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('apiResults').innerHTML = `
+                    <div class="api-result error">
+                        <h3>❌ 提及記錄 API 測試失敗:</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        // 測試資料庫連接
+        async function testDatabase() {
+            try {
+                const response = await fetch('/api/statistics');
+                if (response.ok) {
+                    document.getElementById('dbStatus').textContent = '✅ 連接正常';
+                    document.getElementById('dbStatus').className = 'success';
+                } else {
+                    document.getElementById('dbStatus').textContent = '❌ 連接失敗';
+                    document.getElementById('dbStatus').className = 'error';
+                }
+            } catch (error) {
+                document.getElementById('dbStatus').textContent = '❌ 連接錯誤';
+                document.getElementById('dbStatus').className = 'error';
+            }
+        }
+        
+        // 頁面載入時自動測試資料庫
+        window.onload = function() {
+            testDatabase();
+        };
+    </script>
+</body>
+</html> 

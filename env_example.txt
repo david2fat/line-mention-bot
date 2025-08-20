@@ -1,0 +1,7 @@
+# LINE Bot 設定
+LINE_CHANNEL_ACCESS_TOKEN=your_line_channel_access_token_here
+LINE_CHANNEL_SECRET=your_line_channel_secret_here
+
+# Flask 設定
+FLASK_ENV=development
+FLASK_DEBUG=True 
